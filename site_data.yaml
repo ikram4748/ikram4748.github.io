@@ -1,0 +1,64 @@
+# Project cards for the website (everything else comes from ../cv/cv_data.yaml). `python build.py` writes docs/.
+# status: done | running (shows an "evaluation in progress" badge; update highlights when results land, see ../CLAUDE.md)
+
+title: M. Ikram Ullah | AI/ML Engineer & Data Scientist
+tagline: I build LLM agents, retrieval systems and data products, and I measure whether they work.
+intro: >-
+  AI/ML engineer and data scientist in Islamabad, finishing an MS in Data Science at Quaid-e-Azam University.
+  I like systems that take real actions safely, evaluations with held-out splits and confidence intervals, and
+  results reported honestly, including what did not work. Open to onsite and hybrid roles in Islamabad/Rawalpindi and
+  remote roles anywhere.
+
+projects:
+  - name: Data Analyst Agent
+    category: [agents, data]
+    blurb: Ask a database a question in plain English. The agent links the schema, writes SQL, runs it read-only, catches silent mistakes and fixes its own query.
+    highlights: ["60.7% → 66.7% execution accuracy on held-out BIRD questions", "+6.0 points, 95% CI [+1.3, +11.3]", "1.09 LLM calls per question"]
+    tags: [LangGraph, text-to-SQL, Gemini, DuckDB, evaluation]
+    repo: https://github.com/ikram4748/data-analyst-agent
+    status: done
+  - name: Customer-Ops Agent with Guardrails
+    category: [agents]
+    blurb: "A support agent that cancels orders and issues refunds behind a gateway the model cannot talk its way past: policy in code, customer confirmation, human approval and idempotent refunds."
+    highlights: ["45 tau-bench-style scenarios incl. prompt injection and tool failures", "Supervisor approval via LangGraph interrupts", "No double refunds on payment timeouts"]
+    tags: [LLM agents, guardrails, human-in-the-loop, function calling]
+    repo: https://github.com/ikram4748/customer-ops-agent
+    status: running
+    # TBD: replace highlights with task success / violations / attack success from results/RESULTS_test.md
+  - name: Literature Review Agents
+    category: [agents, research]
+    blurb: A team of agents searches arXiv and OpenAlex and writes a short review where every sentence is cited, every finding quotes its source verbatim, and a critic checks the citations.
+    highlights: ["Planner → searcher → reader → writer → critic → reviser", "Verbatim-quote grounding checked in code", "Independent, validated LLM judge"]
+    tags: [multi-agent, LangGraph, research, citations]
+    repo: https://github.com/ikram4748/research-assistant-agent
+    status: running
+    # TBD: sentence support and citation precision vs baseline
+  - name: Financial RAG Lab
+    category: [rag, research]
+    blurb: Which RAG choices actually matter? Chunking, metadata filters, BM25 vs dense vs hybrid, cross-encoder reranking and HyDE, measured on the exact evidence page in 84 company filings.
+    highlights: ["FinanceBench: 150 questions, 84 filings, 12,013 pages", "45 retrieval configurations, dev/test split", "Answers graded by a validated judge"]
+    tags: [RAG, retrieval, reranking, benchmarking]
+    repo: https://github.com/ikram4748/financial-rag-lab
+    status: running
+    # TBD: best configuration recall@5 and answer accuracy
+  - name: E-mail Experiment & Uplift Modeling
+    category: [data]
+    blurb: "A full readout of a 64,000-customer randomized experiment: validity checks, effects with honest uncertainty, CUPED, peeking, uplift models and a dollar-valued targeting decision."
+    highlights: ["Men's e-mail: +$0.77 spend per customer (95% CI $0.49–$1.05)", "Peeking 10 times → 18% false positives", "Blanket sending beats targeting below ~$0.23/e-mail"]
+    tags: [A/B testing, causal inference, uplift, LightGBM]
+    repo: https://github.com/ikram4748/uplift-ab-testing
+    status: done
+  - name: Qanoon Assist
+    category: [rag]
+    blurb: A legal-information assistant for Pakistani statutes in English, Urdu and Roman Urdu, citing the exact section behind every sentence.
+    highlights: ["6,664 laws · 117,365 sections from 5 government portals", "Hybrid BM25 + BGE-M3 + reranker", "hit@5 1.00, faithfulness 0.944"]
+    tags: [RAG, Urdu NLP, FastAPI, React]
+    repo: ""
+    note: Private repository; demo video on request.
+    status: done
+
+stats:
+  - {value: 5, suffix: "", label: public projects, each with tests and a measured evaluation}
+  - {value: 117365, suffix: "", label: statute sections indexed in Qanoon Assist}
+  - {value: 64000, suffix: "", label: customers in the analysed A/B experiment}
+  - {value: 6.0, suffix: " pts", label: execution-accuracy gain on held-out BIRD questions, decimals: 1}
