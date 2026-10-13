@@ -88,7 +88,7 @@
   $$(".reveal").forEach(el => seen.observe(el));
 
   // project filters --------------------------------------------------------------------------------
-  const chips = $$(".chip"), cards = $$(".card");
+  const chips = $$(".chip"), cards = $$("#projects .card");
   chips.forEach(chip => chip.addEventListener("click", () => {
     const f = chip.dataset.filter;
     chips.forEach(c => { c.classList.toggle("active", c === chip); c.setAttribute("aria-pressed", c === chip); });

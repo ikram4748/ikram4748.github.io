@@ -56,8 +56,9 @@ def project_cards(site: dict, cv: dict) -> tuple[str, str]:
         sid = slug(p["name"])
         cvp = cv_project(cv, p["name"])
         badge = ('<span class="badge badge-live">Evaluation in progress</span>' if p["status"] == "running"
+                 else '<span class="badge badge-done">Live product</span>' if p["status"] == "live"
                  else '<span class="badge badge-done">Measured</span>')
-        private = '<span class="badge badge-private">Private</span>' if not p.get("repo") else ""
+        private = '<span class="badge badge-private">Private code</span>' if not p.get("repo") else ""
         chips = "".join(f"<li>{e(h)}</li>" for h in p["highlights"])
         tags = "".join(f"<span class='tag'>{e(t)}</span>" for t in p["tags"])
         cards.append(f"""
@@ -69,7 +70,9 @@ def project_cards(site: dict, cv: dict) -> tuple[str, str]:
         <div class="tags">{tags}</div>
         <div class="card-actions">
           <button class="btn btn-ghost" data-open="dlg-{sid}" aria-haspopup="dialog">Details {ICONS['arrow']}</button>
-          {f'<a class="btn btn-ghost" href="{e(p["repo"])}" target="_blank" rel="noopener">{ICONS["github"]} Code</a>' if p.get("repo") else f'<span class="muted small">{e(p.get("note", ""))}</span>'}
+          {f'<a class="btn btn-ghost" href="{e(p["repo"])}" target="_blank" rel="noopener">{ICONS["github"]} Code</a>' if p.get("repo")
+           else f'<a class="btn btn-ghost" href="{e(p["link"])}" target="_blank" rel="noopener">{e(p.get("link_label", "Open"))} {ICONS["arrow"]}</a>' if p.get("link")
+           else f'<span class="muted small">{e(p.get("note", ""))}</span>'}
         </div>
       </article>""")
         detail = "".join(f"<li>{e(b)}</li>" for b in bullets(cvp))
@@ -82,7 +85,9 @@ def project_cards(site: dict, cv: dict) -> tuple[str, str]:
       <h4>What I built and measured</h4>
       <ul class="detail-list">{detail}</ul>
       <div class="tags">{tags}</div>
-      {f'<a class="btn btn-primary" href="{e(p["repo"])}" target="_blank" rel="noopener">{ICONS["github"]} View the repository</a>' if p.get("repo") else f'<p class="muted">{e(p.get("note", ""))}</p>'}
+      {f'<a class="btn btn-primary" href="{e(p["repo"])}" target="_blank" rel="noopener">{ICONS["github"]} View the repository</a>' if p.get("repo") else ''}
+      {''.join(f'<a class="btn btn-ghost" href="{e(u)}" target="_blank" rel="noopener">{e(n)} {ICONS["arrow"]}</a> ' for n, u in p.get("links", []))}
+      {f'<p class="muted">{e(p.get("note", ""))}</p>' if p.get("note") else ''}
       {'<p class="muted small">The code and the evaluation harness are finished; the full evaluation is running and the results will appear here.</p>' if p["status"] == "running" else ''}
     </dialog>""")
     return "".join(cards), "".join(dialogs)
@@ -123,15 +128,20 @@ def research_html(cv: dict) -> str:
       </div>"""
 
 
+def for_site(item: dict, v: str = "ai") -> bool:
+    return v in item.get("for", [v]) and v not in item.get("not_for", [])
+
+
 def experience_html(cv: dict) -> str:
     out = []
     for x in cv["experience"]:
-        bl = "".join(f"<li>{e(b)}</li>" for b in bullets(x))
+        bl = "".join(f"<li>{e(b['text'] if isinstance(b, dict) else b)}</li>"
+                     for b in x.get("bullets", []) if not isinstance(b, dict) or for_site(b))
         out.append(f"""
         <li class="tl-item reveal">
           <div class="tl-dot"></div>
           <div class="tl-card">
-            <div class="tl-head"><h3>{e(x['role'])} · {e(x['org'])}</h3><span class="tl-date">{e(x['dates'])}</span></div>
+            <div class="tl-head"><h3>{e(x.get('role_ai') or x['role'])} · {e(x['org'])}</h3><span class="tl-date">{e(x['dates'])}</span></div>
             <p class="muted small">{e(x['place'])}</p>
             <ul class="detail-list">{bl}</ul>
           </div>
@@ -147,6 +157,20 @@ def experience_html(cv: dict) -> str:
           </div>
         </li>""")
     return "".join(out)
+
+
+def clients_html(cv: dict) -> str:
+    cards = []
+    for i, x in enumerate(cv.get("client_projects", [])):
+        tags = "".join(f"<span class='tag'>{e(t.strip())}</span>" for t in x["stack"].split("·"))
+        cards.append(f"""
+      <article class="card card-mini reveal" style="--i:{i % 6}">
+        <div class="card-top"><span class="badge badge-private">Client · code private</span></div>
+        <h3>{e(x['name'])}</h3>
+        <p class="card-blurb">{e(x['text'])}</p>
+        <div class="tags">{tags}</div>
+      </article>""")
+    return "".join(cards)
 
 
 def skills_html(cv: dict) -> str:
@@ -172,7 +196,7 @@ def page(site: dict, cv: dict) -> str:
     stats = "".join(f"""<div class="stat reveal"><span class="stat-num" data-count="{s['value']}" data-decimals="{s.get('decimals', 0)}">0</span><span class="stat-suffix">{e(s['suffix'])}</span><p>{e(s['label'])}</p></div>"""
                     for s in site["stats"])
     filters = "".join(f'<button class="chip{" active" if k == "all" else ""}" data-filter="{k}" aria-pressed="{str(k == "all").lower()}">{e(lbl)}</button>' for k, lbl in FILTERS)
-    cvs = [(v["file"], v["headline"].split(" · ")[0]) for v in cv["variants"].values()]
+    cvs = [(v["file"], v["headline"].split(" · ")[0]) for v in cv["variants"].values() if v.get("site", True)]
     cv_links = "".join(f'<a href="cv/{e(f)}.pdf" download>{ICONS["download"]} {e(t)} CV</a>' for f, t in cvs)
     return f"""<!doctype html>
 <html lang="en">
@@ -180,7 +204,7 @@ def page(site: dict, cv: dict) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{e(site['title'])}</title>
-  <meta name="description" content="{e(site['tagline'])} Projects in LLM agents, RAG, experimentation and machine-learning research.">
+  <meta name="description" content="{e(site['tagline'])} 30+ projects in LLM agents, RAG, AI apps, data science and machine-learning research.">
   <meta property="og:title" content="{e(site['title'])}">
   <meta property="og:description" content="{e(site['tagline'])}">
   <meta property="og:type" content="website">
@@ -197,7 +221,7 @@ def page(site: dict, cv: dict) -> str:
     <nav aria-label="Main">
       <button class="menu-btn" aria-expanded="false" aria-controls="menu" aria-label="Menu"><span></span><span></span></button>
       <ul id="menu">
-        <li><a href="#projects">Projects</a></li><li><a href="#research">Research</a></li>
+        <li><a href="#projects">Projects</a></li><li><a href="#clients">Client work</a></li><li><a href="#research">Research</a></li>
         <li><a href="#experience">Experience</a></li><li><a href="#skills">Skills</a></li><li><a href="#contact">Contact</a></li>
       </ul>
     </nav>
@@ -210,7 +234,7 @@ def page(site: dict, cv: dict) -> str:
       <div class="hero-inner">
         <p class="eyebrow mono">Islamabad, Pakistan · open to onsite, hybrid & remote</p>
         <h1>{e(cv['name'])}</h1>
-        <p class="role"><span class="role-text" data-roles='["AI/ML Engineer","Data Scientist","ML Researcher","LLM Agent Builder"]'>AI/ML Engineer</span><span class="caret"></span></p>
+        <p class="role"><span class="role-text" data-roles='["AI/ML Engineer","Data Scientist","ML Researcher","LLM Agent Builder","AI App Developer"]'>AI/ML Engineer</span><span class="caret"></span></p>
         <p class="tagline">{e(site['tagline'])}</p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="#projects">See the projects {ICONS['arrow']}</a>
@@ -239,10 +263,19 @@ def page(site: dict, cv: dict) -> str:
       <div class="section-head reveal">
         <p class="eyebrow">Selected work</p>
         <h2>Projects</h2>
-        <p class="muted">Every public project has tests, a launcher for Windows and macOS, and an evaluation with held-out data.</p>
+        <p class="muted">A live product, my public portfolio projects (each with tests, launchers for Windows and macOS, and an evaluation on held-out data) and private work.</p>
       </div>
       <div class="filters" role="group" aria-label="Filter projects">{filters}</div>
       <div class="cards">{cards}</div>
+    </section>
+
+    <section id="clients" class="section">
+      <div class="section-head reveal">
+        <p class="eyebrow">Client work</p>
+        <h2>More projects</h2>
+        <p class="muted">A selection of projects built for clients. The code belongs to them, so it is not public; I am happy to walk through any of them.</p>
+      </div>
+      <div class="cards">{clients_html(cv)}</div>
     </section>
 
     <section id="research" class="section">
@@ -288,7 +321,11 @@ def main() -> None:
     (ROOT / "index.html").write_text(page(site, cv), encoding="utf-8")
     out = ROOT / "cv"
     out.mkdir(exist_ok=True)
+    for old in out.glob("*.pdf"):
+        old.unlink()
     for v in cv["variants"].values():
+        if not v.get("site", True):
+            continue
         src = CV_DIR / "output" / f"{v['file']}.pdf"
         if src.exists():
             shutil.copy2(src, out / src.name)
